@@ -2,29 +2,19 @@ using System;
 
 namespace ConnectFour; // file-scope name space
 
-/// Core game engine: manages the board, enforces rules, detects wins/draws,
-/// and orchestrates the turn-by-turn game loop between two players.
+/// Core game engine: manages board state and game rules.
 public sealed class GameEngine
 {
     public const int Rows = 6;
     public const int Columns = 7;
     
-    /// Four unique directions to scan for a 4-in-a-row win:
-    /// (0,1) = horizontal right, (1,0) = vertical down,
-    /// (1,1) = diagonal down-right, (1,-1) = diagonal down-left.
-    private static readonly (int deltaRow, int deltaColumn)[] Directions =
-    {
-        (0, 1),
-        (1, 0),
-        (1, 1),
-        (1, -1)
-    };
-
-    private readonly IPlayer _player1;
-    private readonly IPlayer _player2;
+    private IPlayer _player1;
+    private IPlayer _player2;
     private CellState[][] _board;
     
-    /// Initializes a new game with two players and an empty board.
+    /// Four unique directions to scan for a 4-in-a-row win:
+    private static readonly (int deltaRow, int deltaColumn)[] Directions = { (0, 1), (1, 0), (1, 1), (1, -1) };
+    
     public GameEngine(IPlayer player1, IPlayer player2)
     {
         _player1 = player1;
@@ -34,16 +24,14 @@ public sealed class GameEngine
         CurrentPlayer = CellState.Player1;
         MoveCount = 0;
     }
-    
-    /// Fired when the game ends (win or draw). 
-    /// Subscribers receive a GameEndedEvent with the winner, draw status, and total move count.
+
+    /// Fired when the game ends (win or draw).
     public event EventHandler<GameEndedEvent>? OnGameEnded;
     
     public CellState CurrentPlayer { get; private set; } 
     public int MoveCount { get; private set; } //Total moves played so far in this game
     
-    /// Main game loop: repeatedly displays the board, gets moves from each player,
-    /// updates the board, checks for win/draw, and switches turns until game ends.
+    /// Runs the game loop until win or draw.
     public void Run()
     {
         var gameOver = false;
@@ -107,8 +95,7 @@ public sealed class GameEngine
     }
     
     /// Toggles between Player1 and Player2.
-    private void SwitchPlayer() =>
-        CurrentPlayer = CurrentPlayer == CellState.Player1 ? CellState.Player2 : CellState.Player1;
+    private void SwitchPlayer() => CurrentPlayer = CurrentPlayer == CellState.Player1 ? CellState.Player2 : CellState.Player1;
     
     /// Checks if the most recently placed piece (at row, col) forms a 4-in-a-row
     /// in any of the four directions.
@@ -130,7 +117,7 @@ public sealed class GameEngine
         return false;
     }
     
-    /// Counts how many consecutive same-colored pieces lie in a given direction
+    /// Counts how many consecutive same pieces in a given direction
     /// starting from (row, col). Stops at board edge or different piece color.
     private int CountInDirection(int row, int col, int dr, int dc)
     {
@@ -156,21 +143,13 @@ public sealed class GameEngine
     {
         return MoveCount >= Rows * Columns;
     }
-    
-    /// Fires the OnGameEnded event with the final game result.
+
     private void EndGame(CellState winner, bool isDraw)
     {
-        OnGameEnded?.Invoke(this, new GameEndedEvent
-        {
-            Winner = winner,
-            IsDraw = isDraw,
-            MoveCount = MoveCount
-        });
+        OnGameEnded?.Invoke(this, new GameEndedEvent { Winner = winner, IsDraw = isDraw, MoveCount = MoveCount });
     }
-
-
+    
     /// Prints the current board state to the console with column numbers.
-    /// X represents Player1, O represents Player2, . represents Empty.
     private void DisplayBoard()
     {
         Console.WriteLine();

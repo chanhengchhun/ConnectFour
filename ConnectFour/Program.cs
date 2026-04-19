@@ -4,16 +4,17 @@ namespace ConnectFour;
 
 public static class Program
 {
+    /// Main Program
     public static void Main(string[] args)
     {
         PrintMenu();
         var choice = Console.ReadLine()?.Trim();
-        var player2IsAi = choice == "2";
+        bool player2IsAi = choice == "2";
 
         var (player1, player2) = CreatePlayers(player2IsAi);
         var engine = new GameEngine(player1, player2);
 
-        engine.OnGameEnded += (_, eventArgs) => PrintEndGameMessage(eventArgs);
+        engine.OnGameEnded += HandleGameEnded;
         engine.Run();
     }
     
@@ -29,7 +30,6 @@ public static class Program
 
 
     /// Creates two player objects based on the game mode.
-    /// Player 1 is always human; Player 2 is human or AI based on the flag.
     private static (IPlayer Player1, IPlayer Player2) CreatePlayers(bool player2IsAi)
     {
         IPlayer player1 = new PlayerHuman("Player 1 (X)");
@@ -37,17 +37,20 @@ public static class Program
         return (player1, player2);
     }
     
+    /// Event handler called by GameEngine when the game ends.
+    private static void HandleGameEnded(object? sender, GameEndedEvent gameEndedEvent) { PrintEndGameMessage(gameEndedEvent); }
+
     /// Prints the final result message: either announcing the winner or declaring a draw.
-    private static void PrintEndGameMessage(GameEndedEvent @event)
+    private static void PrintEndGameMessage(GameEndedEvent gameEndedEvent)
     {
-        if (@event.IsDraw)
+        if (gameEndedEvent.IsDraw)
         {
-            Console.WriteLine($"Draw after {@event.MoveCount} moves.");
+            Console.WriteLine($"Draw after {gameEndedEvent.MoveCount} moves.");
         }
         else
         {
-            var winnerText = @event.Winner == CellState.Player1 ? "Player 1 (X)" : "Player 2 (O)";
-            Console.WriteLine($"{winnerText} wins in {@event.MoveCount} moves!");
+            var winnerText = gameEndedEvent.Winner == CellState.Player1 ? "Player 1 (X)" : "Player 2 (O)";
+            Console.WriteLine($"{winnerText} wins in {gameEndedEvent.MoveCount} moves!");
         }
     }
 }
