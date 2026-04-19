@@ -1,11 +1,13 @@
 namespace ConnectFour;
 
-/// Shared contract for all player types (human or AI).
+/// Shared contract (interface) for any player in the game. Both human and AI players
+/// must implement this interface to participate in the game engine.
 public interface IPlayer
 {
+    // players' name
     string Name { get; }
-
-    // Returns the chosen column index for the current turn.
+    
+    // players' moves
     int GetMove(CellState[][] board);
 }
 

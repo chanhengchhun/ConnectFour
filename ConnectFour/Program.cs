@@ -1,6 +1,7 @@
 ﻿using System;
 
 namespace ConnectFour;
+
 public static class Program
 {
     public static void Main(string[] args)
@@ -15,7 +16,8 @@ public static class Program
         engine.OnGameEnded += (_, eventArgs) => PrintEndGameMessage(eventArgs);
         engine.Run();
     }
-
+    
+    /// Displays the game mode selection menu on the console.
     private static void PrintMenu()
     {
         Console.WriteLine("Connect Four");
@@ -25,13 +27,17 @@ public static class Program
         Console.Write("Choose mode (1-2): ");
     }
 
+
+    /// Creates two player objects based on the game mode.
+    /// Player 1 is always human; Player 2 is human or AI based on the flag.
     private static (IPlayer Player1, IPlayer Player2) CreatePlayers(bool player2IsAi)
     {
         IPlayer player1 = new PlayerHuman("Player 1 (X)");
         IPlayer player2 = player2IsAi ? new PlayerAI("Computer (O)") : new PlayerHuman("Player 2 (O)");
         return (player1, player2);
     }
-
+    
+    /// Prints the final result message: either announcing the winner or declaring a draw.
     private static void PrintEndGameMessage(GameEndedEvent @event)
     {
         if (@event.IsDraw)
