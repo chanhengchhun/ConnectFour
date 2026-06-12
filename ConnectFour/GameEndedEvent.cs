@@ -2,10 +2,9 @@ using System;
 
 namespace ConnectFour;
 
-/// Event data raised when a game ends.
-public sealed class GameEndedEvent : EventArgs
+public sealed class GameEndedEvent(CellState winner, bool isDraw, int moveCount) : EventArgs
 {
-    public CellState Winner { get; init; }
-    public bool IsDraw { get; init; }
-    public int MoveCount { get; init; }
+    public readonly CellState Winner = winner;
+    public readonly bool IsDraw = isDraw;
+    public readonly int MoveCount = moveCount;
 }

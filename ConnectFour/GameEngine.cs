@@ -1,35 +1,24 @@
 using System;
+using System.Linq;
 
-namespace ConnectFour; // file-scope name space
+namespace ConnectFour;
 
 /// Core game engine: manages board state and game rules.
-public sealed class GameEngine
+public sealed class GameEngine(IPlayer player1, IPlayer player2)
 {
     public const int Rows = 6;
     public const int Columns = 7;
     
-    private IPlayer _player1;
-    private IPlayer _player2;
-    private CellState[][] _board;
+    private readonly CellState[][] _board = CreateEmptyBoard();
     
     /// Four unique directions to scan for a 4-in-a-row win:
-    private static readonly (int deltaRow, int deltaColumn)[] Directions = { (0, 1), (1, 0), (1, 1), (1, -1) };
-    
-    public GameEngine(IPlayer player1, IPlayer player2)
-    {
-        _player1 = player1;
-        _player2 = player2;
-        _board = CreateEmptyBoard();
-        
-        CurrentPlayer = CellState.Player1;
-        MoveCount = 0;
-    }
+    private static readonly (int deltaRow, int deltaColumn)[] Directions = [ (0, 1), (1, 0), (1, 1), (1, -1) ];
 
     /// Fired when the game ends (win or draw).
     public event EventHandler<GameEndedEvent>? OnGameEnded;
     
-    public CellState CurrentPlayer { get; private set; } 
-    public int MoveCount { get; private set; } //Total moves played so far in this game
+    public CellState CurrentPlayer { get; private set; } = CellState.Player1;
+    public int MoveCount { get; private set; } = 0; //Total moves played so far in this game
     
     /// Runs the game loop until win or draw.
     public void Run()
@@ -39,7 +28,7 @@ public sealed class GameEngine
         do
         {
             DisplayBoard();
-            var activePlayer = CurrentPlayer == CellState.Player1 ? _player1 : _player2;
+            var activePlayer = CurrentPlayer == CellState.Player1 ? player1 : player2;
 
             var col = activePlayer.GetMove(_board);
             var row = GetLandingRow(col);
@@ -99,23 +88,10 @@ public sealed class GameEngine
     
     /// Checks if the most recently placed piece (at row, col) forms a 4-in-a-row
     /// in any of the four directions.
-    private bool CheckWin(int row, int col)
-    {
-        foreach (var direction in Directions)
-        {
-            // Count matching pieces in both opposite directions from the latest move.
-            var connectedCount = 1
-                                 + CountInDirection(row, col, direction.deltaRow, direction.deltaColumn)
-                                 + CountInDirection(row, col, -direction.deltaRow, -direction.deltaColumn);
-
-            if (connectedCount >= 4)
-            {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private bool CheckWin(int row, int col) =>
+        Directions.Any(d => 1
+            + CountInDirection(row, col, d.deltaRow, d.deltaColumn)
+            + CountInDirection(row, col, -d.deltaRow, -d.deltaColumn) >= 4);
     
     /// Counts how many consecutive same pieces in a given direction
     /// starting from (row, col). Stops at board edge or different piece color.
@@ -139,15 +115,10 @@ public sealed class GameEngine
 
 
     /// Checks if the board is completely full (all 42 cells occupied).
-    private bool IsDraw()
-    {
-        return MoveCount >= Rows * Columns;
-    }
+    private bool IsDraw() => MoveCount >= Rows * Columns;
 
-    private void EndGame(CellState winner, bool isDraw)
-    {
-        OnGameEnded?.Invoke(this, new GameEndedEvent { Winner = winner, IsDraw = isDraw, MoveCount = MoveCount });
-    }
+    private void EndGame(CellState winner, bool isDraw) =>
+        OnGameEnded?.Invoke(this, new GameEndedEvent(winner, isDraw, MoveCount));
     
     /// Prints the current board state to the console with column numbers.
     private void DisplayBoard()
@@ -169,36 +140,14 @@ public sealed class GameEngine
     }
     
     /// Creates a 6x7 board with all cells initialized to Empty.
-    private static CellState[][] CreateEmptyBoard()
-    {
-        // Build the board explicitly so each cell starts as Empty.
-        var board = new CellState[Rows][];
-
-        for (var row = 0; row < Rows; row++)
-        {
-            board[row] = new CellState[Columns];
-
-            for (var col = 0; col < Columns; col++)
-            {
-                board[row][col] = CellState.Empty;
-            }
-        }
-
-        return board;
-    }
+    private static CellState[][] CreateEmptyBoard() =>
+        Enumerable.Range(0, Rows).Select(_ => new CellState[Columns]).ToArray();
     
     /// Converts a CellState to its display character: X, O, or .
-    private static string ToSymbol(CellState state)
+    private static string ToSymbol(CellState state) => state switch
     {
-        switch (state)
-        {
-            case CellState.Player1:
-                return "X";
-            case CellState.Player2:
-                return "O";
-            default:
-                return ".";
-        }
-    }
+        CellState.Player1 => "X",
+        CellState.Player2 => "O",
+        _ => "."
+    };
 }
-

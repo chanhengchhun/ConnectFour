@@ -3,14 +3,9 @@ using System;
 namespace ConnectFour;
 
 /// Human player that reads moves from console input.
-public sealed class PlayerHuman : IPlayer
+public sealed class PlayerHuman(string name) : IPlayer
 {
-    public string Name { get; }
-    
-    public PlayerHuman(string name)
-    {
-        Name = name;
-    }
+    public string Name => name;
     
     /// Prompts the player via console to enter a column (0-6).
     public int GetMove(CellState[][] board)
@@ -18,10 +13,7 @@ public sealed class PlayerHuman : IPlayer
         while (true)
         {
             Console.Write($"{Name}, enter a column (0-6): ");
-            var raw = Console.ReadLine();
-            bool isInt = int.TryParse(raw, out var column);
-
-            if (isInt && column is >= 0 and <= 6)
+            if (int.TryParse(Console.ReadLine(), out var column) && column is >= 0 and <= 6)
             {
                 return column;
             }
